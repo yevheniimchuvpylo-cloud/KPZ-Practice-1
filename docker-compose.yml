@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  # Назва сервісу твого бекенду
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lost-backend-api
+    # Порти: Host(3000) -> Container(3000)
+    ports:
+      - "3000:3000"
+    # Монтування "мосту" між папкою на Windows та контейнером (Volumes)
+    volumes:
+      - .:/app # Синхронізуємо поточну папку з папкою /app в контейнері
+      - /app/node_modules # ВАЖЛИВО: не даємо локальній папці node_modules перекрити ту, що в контейнері
+    # Змінні оточення для підключення до бази
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGO_URI=mongodb://db:27017/lost-and-found
+    # Кажемо Docker, що база повинна запуститися першою
+    depends_on:
+      - db
+    networks:
+      - lost-network
+
+  # Сервіс бази даних
+  db:
+    image: mongo:latest
+    container_name: lost-db
+    ports:
+      - "27017:27017"
+    # Зберігаємо дані бази на твоєму диску, щоб вони не зникли після перезапуску
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - lost-network
+
+# Опис віртуальної мережі
+networks:
+  lost-network:
+    driver: bridge
+
+# Опис сховища для бази
+volumes:
+  mongo-data:
