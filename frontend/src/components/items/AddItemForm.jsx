@@ -1,101 +1,96 @@
 import { useState } from 'react';
+import api from '../../api/axios';
+import { Loader2 } from 'lucide-react';
 
-export default function AddItemForm({ onClose }) {
+export default function AddItemForm({ onClose, initialData = null }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const isEditMode = !!initialData;
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        city: '',
-        place: '',
-        type: 'lost',
-        image: null
+        title: initialData?.title || '',
+        description: initialData?.description || '',
+        city: initialData?.city || '',
+        location: initialData?.location || '',
+        type: initialData?.type || 'lost',
+        imageUrl: initialData?.imageUrl || ''
     });
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Дані форми:', formData);
-        
-        alert('Оголошення успішно додано (імітація)');
-        onClose();
+        setIsLoading(true);
+        try {
+            if (isEditMode) {
+                await api.patch(`/items/${initialData._id}`, formData);
+                alert('Оновлено!');
+            } else {
+                await api.post('/items/add', formData);
+                alert('Опубліковано!');
+            }
+            onClose();
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || 'Помилка API');
+        } finally {
+            setIsLoading(false);
+        }
     };
-
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-
             <div className="flex bg-gray-100 p-1 rounded-xl">
-                <button
-                    type="button"
-                    onClick={() => setFormData({...formData, type: 'lost'})}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${formData.type === 'lost' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500'}`}
-                >
-                    Я загубив
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setFormData({...formData, type: 'found'})}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${formData.type === 'found' ? 'bg-green-500 text-white shadow-md' : 'text-gray-500'}`}
-                >
-                    Я знайшов
-                </button>
+                {['lost', 'found'].map(t => (
+                    <button
+                        key={t}
+                        type="button"
+                        onClick={() => setFormData({...formData, type: t})}
+                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                            formData.type === t
+                                ? (t === 'lost' ? 'bg-red-500 text-white' : 'bg-green-500 text-white')
+                                : 'text-gray-500'
+                        }`}
+                    >
+                        {t === 'lost' ? 'Я загубив' : 'Я знайшов'}
+                    </button>
+                ))}
             </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Назва предмета</label>
+            <input
+                required
+                placeholder="Назва"
+                className="w-full px-4 py-2 border rounded-xl"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+            />
+            <div className="grid grid-cols-2 gap-4">
                 <input
                     required
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="Наприклад: Ключі від авто"
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    placeholder="Місто"
+                    className="w-full px-4 py-2 border rounded-xl"
+                    value={formData.city}
+                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                />
+                <input
+                    required
+                    placeholder="Місце/Район"
+                    className="w-full px-4 py-2 border rounded-xl"
+                    value={formData.location}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
                 />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Місто</label>
-                    <input
-                        required
-                        type="text"
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={formData.city}
-                        onChange={(e) => setFormData({...formData, city: e.target.value})}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Місце (район)</label>
-                    <input
-                        type="text"
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={formData.place}
-                        onChange={(e) => setFormData({...formData, place: e.target.value})}
-                    />
-                </div>
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Опис</label>
-                <textarea
-                    rows="3"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="Опишіть деталі..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                ></textarea>
-            </div>
-
+            <textarea
+                required
+                placeholder="Опис"
+                className="w-full px-4 py-2 border rounded-xl"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+            />
+            <input
+                placeholder="URL фото"
+                className="w-full px-4 py-2 border rounded-xl"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+            />
             <div className="flex gap-3 pt-4">
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium"
-                >
-                    Скасувати
-                </button>
-                <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-lg shadow-blue-200"
-                >
-                    Опублікувати
+                <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-xl">Скасувати</button>
+                <button type="submit" disabled={isLoading} className="flex-1 py-2 bg-blue-600 text-white rounded-xl flex justify-center">
+                    {isLoading ? <Loader2 className="animate-spin" /> : (isEditMode ? 'Зберегти' : 'Опублікувати')}
                 </button>
             </div>
         </form>
