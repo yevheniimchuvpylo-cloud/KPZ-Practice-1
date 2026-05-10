@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Налаштування бекенду
+  api:
+    build: ./backend        # Де лежить Dockerfile бекенду
+    ports:
+      - "3000:3000"         # "Порт на комп'ютері : Порт у контейнері"
+    volumes:
+      - ./backend:/app      # Синхронізація коду: зміниш код на комп'ютері — він зміниться в контейнері
+      - /app/node_modules   # Не видаляти модулі всередині контейнера
+
+  # Налаштування фронтенду
+  client:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api                 # Спочатку запустить бекенд, потім фронтенд
